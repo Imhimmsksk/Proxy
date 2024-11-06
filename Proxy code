@@ -1,0 +1,38 @@
+const http = require('http');
+const url = require('url');
+
+// Create a proxy server
+const proxyServer = http.createServer((req, res) => {
+  // Parse the requested URL
+  const parsedUrl = url.parse(req.url);
+
+  // Check if the request is for a proxy
+  if (parsedUrl.hostname === 'www.example.com') {
+    // Forward the request to the target website
+    const options = {
+      hostname: parsedUrl.hostname,
+      port: parsedUrl.port || 80,
+      path: parsedUrl.path,
+      method: req.method,
+      headers: req.headers
+    };
+
+    const proxyRequest = http.request(options, (proxyResponse) => {
+      // Forward the response back to the client
+      res.writeHead(proxyResponse.statusCode, proxyResponse.headers);
+      proxyResponse.pipe(res);
+    });
+
+    // Pipe the request body to the proxy request
+    req.pipe(proxyRequest);
+  } else {
+    // Deny access to non-proxy requests
+    res.statusCode = 403;
+    res.end('Access denied');
+  }
+});
+
+// Start the proxy server
+proxyServer.listen(8080, () => {
+  console.log('Proxy server running on port 8080');
+});
